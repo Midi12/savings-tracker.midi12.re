@@ -453,6 +453,90 @@
                 justify-content: center;
             }
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-content {
+            background-color: var(--bg-primary);
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            width: 80%;
+            max-width: 900px;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-close {
+            color: var(--text-secondary);
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-close:hover,
+        .modal-close:focus {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .content-section {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .content-section h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .content-section p, .content-section ul, .content-section ol {
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        .content-section ul, .content-section ol {
+            padding-left: 20px;
+        }
+
+        .content-section code {
+            background-color: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-primary);
+        }
+
+        .content-section pre {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', Courier, monospace;
+        }
     </style>
 </head>
 <body>
@@ -464,12 +548,12 @@
                     <svg class="swap-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
                     <svg class="swap-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/></svg>
                 </button>
-                <a href="documentation.html" class="github-link" title="Documentation">
+                <button class="github-link" onclick="openDocs()" title="Documentation">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     <span>Docs</span>
-                </a>
+                </button>
                 <a href="https://github.com/Midi12/savings-tracker.midi12.re" target="_blank" class="github-link" title="Download from GitHub">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
@@ -584,6 +668,21 @@
             '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
             '#F8B739', '#52B788', '#FF6B9D', '#C9CBCF', '#A8DADC'
         ];
+
+        function openDocs() {
+            document.getElementById('docsModal').style.display = 'block';
+        }
+
+        function closeDocs(event) {
+            const modal = document.getElementById('docsModal');
+            if (event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            } else {
+                modal.style.display = 'none';
+            }
+        }
 
         function toggleTheme() {
             const body = document.body;
@@ -1111,5 +1210,81 @@
             document.body.setAttribute('data-theme', 'dark');
         }
     </script>
+
+    <div id="docsModal" class="modal" onclick="closeDocs(event)">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeDocs()">&times;</span>
+            <div class="content-section">
+                <h2>How to Use the Application</h2>
+                <p>The Savings Balance Tracker is a tool designed to help you visualize your financial account balances over time. Here's a step-by-step guide:</p>
+                <ol>
+                    <li><strong>Load Your Balance Data:</strong>
+                        <ul>
+                            <li>Click the "Choose Balance CSV File" button.</li>
+                            <li>Select the CSV file from your computer that contains your account balances.</li>
+                            <li>The application will automatically process the data and display a chart, summary, and data table.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Load Currency Conversion Data (Optional):</strong>
+                        <ul>
+                            <li>If your accounts are in different currencies, you can provide a currency conversion file.</li>
+                            <li>Click the "Choose Currency CSV File" button and select your conversion rates file.</li>
+                            <li>The app will use these rates to convert all balances to a single currency (EUR by default) for the chart and summary calculations.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Filter Your Data:</strong>
+                        <ul>
+                            <li>Use the "Filter Options" section to narrow down your view.</li>
+                            <li><strong>Accounts:</strong> Check or uncheck account names to show or hide them from the chart and table.</li>
+                            <li><strong>Date Range:</strong> Select a start and end date to focus on a specific period.</li>
+                            <li>Click "Apply Filters" to update the view. You can also reset filters or select/deselect all accounts.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Explore the Visualizations:</strong>
+                        <ul>
+                            <li><strong>Chart:</strong> The chart shows the evolution of your account balances over time.</li>
+                            <li><strong>Summary:</strong> The summary cards provide a quick overview of the number of accounts, the latest total balance, and the currently displayed date range.</li>
+                            <li><strong>Data Table:</strong> The table shows the raw data for the filtered period, with color-coding to match the accounts in the chart.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="content-section">
+                <h2>Balance CSV File Format</h2>
+                <p>Your balance data must be in a CSV file with a specific structure. The file must use a <strong>semicolon (;)</strong> as the delimiter.</p>
+                <p>The required columns are:</p>
+                <ul>
+                    <li><code>Account name</code> or <code>account</code>: The name of the financial account.</li>
+                    <li><code>date</code>: The date of the balance record in <code>YYYY-MM-DD</code> format.</li>
+                    <li><code>balance</code>: The numerical balance of the account.</li>
+                    <li><code>currency</code>: The three-letter currency code (e.g., EUR, USD, GBP).</li>
+                </ul>
+                <p><strong>Example:</strong></p>
+    <pre><code>Account name;date;balance;currency
+    Checking Account;2024-01-15;5234.50;EUR
+    Savings Account;2024-01-15;12500.00;EUR
+    Investment Portfolio;2024-01-15;8750.25;USD
+    </code></pre>
+            </div>
+
+            <div class="content-section">
+                <h2>Currency CSV File Format</h2>
+                <p>The currency conversion file is optional. It is used to convert different currencies into a single base currency for unified reporting. This file must also use a <strong>semicolon (;)</strong> as the delimiter.</p>
+                <p>The required columns are:</p>
+                <ul>
+                    <li><code>from</code> or <code>source</code>: The source currency code.</li>
+                    <li><code>to</code> or <code>target</code>: The target currency code.</li>
+                    <li><code>rate</code> or <code>value</code>: The conversion rate (how many 'to' units you get for one 'from' unit).</li>
+                </ul>
+                <p><strong>Example:</strong></p>
+    <pre><code>from;to;rate
+    USD;EUR;0.92
+    GBP;EUR;1.16
+    </code></pre>
+                <p>In this example, 1 USD is converted to 0.92 EUR, and 1 GBP is converted to 1.16 EUR.</p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
