@@ -139,6 +139,21 @@
             stroke: var(--text-primary);
         }
 
+        .file-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .file-input-container .file-input-wrapper {
+            flex-grow: 1;
+        }
+
+        .file-input-container .filter-btn {
+            flex-shrink: 0;
+            padding: 12px 20px;
+        }
+
         .controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -566,25 +581,31 @@
         <div class="controls">
             <div class="control-group">
                 <h3>📊 Load Balance Data</h3>
-                <div class="file-input-wrapper">
-                    <input type="file" id="balanceFile" class="file-input" accept=".csv" onchange="loadBalanceData(event)">
-                    <label for="balanceFile" class="file-input-label">
-                        Choose Balance CSV File
-                    </label>
-                    <div class="file-name" id="balanceFileName"></div>
+                <div class="file-input-container">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="balanceFile" class="file-input" accept=".csv" onchange="loadBalanceData(event)">
+                        <label for="balanceFile" class="file-input-label">
+                            Choose Balance CSV
+                        </label>
+                    </div>
+                    <button class="filter-btn secondary" onclick="clearStoredCSV('balance')" title="Clear stored balance data">Clear</button>
                 </div>
+                <div class="file-name" id="balanceFileName"></div>
                 <div class="status-message" id="balanceStatus"></div>
             </div>
 
             <div class="control-group">
                 <h3>💱 Load Currency Conversion (Optional)</h3>
-                <div class="file-input-wrapper">
-                    <input type="file" id="currencyFile" class="file-input" accept=".csv" onchange="loadCurrencyData(event)">
-                    <label for="currencyFile" class="file-input-label">
-                        Choose Currency CSV File
-                    </label>
-                    <div class="file-name" id="currencyFileName"></div>
+                <div class="file-input-container">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="currencyFile" class="file-input" accept=".csv" onchange="loadCurrencyData(event)">
+                        <label for="currencyFile" class="file-input-label">
+                            Choose Currency CSV
+                        </label>
+                    </div>
+                    <button class="filter-btn secondary" onclick="clearStoredCSV('currency')" title="Clear stored currency data">Clear</button>
                 </div>
+                <div class="file-name" id="currencyFileName"></div>
                 <div class="status-message" id="currencyStatus"></div>
             </div>
         </div>
@@ -690,6 +711,15 @@
             body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
             if (filteredData.length > 0) {
                 drawChart();
+            }
+        }
+
+        function clearStoredCSV(type) {
+            const itemName = type === 'balance' ? 'balanceCSV' : 'currencyCSV';
+            const userConfirmed = confirm(`Are you sure you want to clear the stored ${type} data?`);
+            if (userConfirmed) {
+                localStorage.removeItem(itemName);
+                location.reload();
             }
         }
 
