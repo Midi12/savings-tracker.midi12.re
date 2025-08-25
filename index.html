@@ -712,68 +712,102 @@
             return data;
         }
 
+        function processBalanceData(text, fileName) {
+            try {
+                balanceData = parseCSV(text);
+
+                // Process and validate data
+                balanceData = balanceData.map(row => ({
+                    account: row['account name'] || row.account,
+                    date: new Date(row.date),
+                    balance: parseFloat(row.balance),
+                    currency: row.currency
+                })).filter(row => !isNaN(row.date.getTime()) && !isNaN(row.balance));
+
+                // Sort by date
+                balanceData.sort((a, b) => a.date - b.date);
+
+                // Assign colors to accounts
+                const accounts = [...new Set(balanceData.map(d => d.account))];
+                accounts.forEach((account, index) => {
+                    accountColors[account] = colorPalette[index % colorPalette.length];
+                });
+
+                // Initialize filters
+                activeFilters.accounts = accounts;
+                filteredData = [...balanceData];
+
+                // Setup filter UI
+                setupFilters();
+
+                document.getElementById('balanceFileName').textContent = fileName;
+                showStatus('balanceStatus', `Loaded ${balanceData.length} records from ${accounts.length} accounts from ${fileName}`, 'success');
+            } catch (error) {
+                showStatus('balanceStatus', 'Error parsing CSV file: ' + error.message, 'error');
+                localStorage.removeItem('balanceCSV');
+            }
+        }
+
+        function processCurrencyData(text, fileName) {
+            try {
+                currencyData = parseCSV(text);
+                document.getElementById('currencyFileName').textContent = fileName;
+                showStatus('currencyStatus', `Loaded ${currencyData.length} currency conversion records from ${fileName}`, 'success');
+            } catch (error) {
+                showStatus('currencyStatus', 'Error parsing currency CSV: ' + error.message, 'error');
+                localStorage.removeItem('currencyCSV');
+            }
+        }
+
         function loadBalanceData(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            document.getElementById('balanceFileName').textContent = file.name;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    const text = e.target.result;
-                    balanceData = parseCSV(text);
-                    
-                    // Process and validate data
-                    balanceData = balanceData.map(row => ({
-                        account: row['account name'] || row.account,
-                        date: new Date(row.date),
-                        balance: parseFloat(row.balance),
-                        currency: row.currency
-                    })).filter(row => !isNaN(row.date.getTime()) && !isNaN(row.balance));
-                    
-                    // Sort by date
-                    balanceData.sort((a, b) => a.date - b.date);
-                    
-                    // Assign colors to accounts
-                    const accounts = [...new Set(balanceData.map(d => d.account))];
-                    accounts.forEach((account, index) => {
-                        accountColors[account] = colorPalette[index % colorPalette.length];
-                    });
-                    
-                    // Initialize filters
-                    activeFilters.accounts = accounts;
-                    filteredData = [...balanceData];
-                    
-                    // Setup filter UI
-                    setupFilters();
-                    
-                    showStatus('balanceStatus', `Loaded ${balanceData.length} records from ${accounts.length} accounts`, 'success');
+                const text = e.target.result;
+                localStorage.setItem('balanceCSV', JSON.stringify({name: file.name, content: text}));
+                processBalanceData(text, file.name);
+                if (balanceData.length > 0) {
                     processAndDisplay();
-                } catch (error) {
-                    showStatus('balanceStatus', 'Error parsing CSV file: ' + error.message, 'error');
                 }
             };
             reader.readAsText(file);
+        }
+
+        function loadFromLocalStorage() {
+            const savedBalance = localStorage.getItem('balanceCSV');
+            let balanceLoaded = false;
+            if (savedBalance) {
+                const {name, content} = JSON.parse(savedBalance);
+                processBalanceData(content, name);
+                if (balanceData.length > 0) {
+                    balanceLoaded = true;
+                }
+            }
+
+            const savedCurrency = localStorage.getItem('currencyCSV');
+            if (savedCurrency) {
+                const {name, content} = JSON.parse(savedCurrency);
+                processCurrencyData(content, name);
+            }
+
+            if(balanceLoaded) {
+                processAndDisplay();
+            }
         }
 
         function loadCurrencyData(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            document.getElementById('currencyFileName').textContent = file.name;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    const text = e.target.result;
-                    currencyData = parseCSV(text);
-                    showStatus('currencyStatus', `Loaded ${currencyData.length} currency conversion records`, 'success');
-                    if (balanceData.length > 0) {
-                        processAndDisplay();
-                    }
-                } catch (error) {
-                    showStatus('currencyStatus', 'Error parsing currency CSV: ' + error.message, 'error');
+                const text = e.target.result;
+                localStorage.setItem('currencyCSV', JSON.stringify({name: file.name, content: text}));
+                processCurrencyData(text, file.name);
+                if (balanceData.length > 0) {
+                    processAndDisplay();
                 }
             };
             reader.readAsText(file);
@@ -1209,6 +1243,8 @@
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.body.setAttribute('data-theme', 'dark');
         }
+
+        document.addEventListener('DOMContentLoaded', loadFromLocalStorage);
     </script>
 
     <div id="docsModal" class="modal" onclick="closeDocs(event)">
