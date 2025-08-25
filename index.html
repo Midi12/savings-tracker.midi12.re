@@ -1056,7 +1056,8 @@
             const dateObjects = dates.map(d => new Date(d));
             const minDate = dateObjects[0];
             const maxDate = dateObjects[dateObjects.length - 1];
-            
+            const isSingleDate = dates.length === 1;
+
             // Get value range - find maximum single account value
             let maxValue = 0;
             filteredData.forEach(row => {
@@ -1120,22 +1121,24 @@
                     .filter(d => d.account === account)
                     .sort((a, b) => a.date - b.date);
                 
-                accountData.forEach((point, idx) => {
-                    const dateKey = point.date.toISOString().split('T')[0];
-                    const dateIndex = dates.indexOf(dateKey);
-                    
-                    if (dateIndex !== -1) {
-                        const x = (padding.left + (dateIndex * chartWidth) / (dates.length - 1)) / 2;
-                        const value = convertCurrency(point.balance, point.currency, 'EUR', point.date);
-                        const y = (chartHeight + padding.top) / 2 - (value * chartHeight) / (maxValue * 2);
+                if (!isSingleDate) {
+                    accountData.forEach((point, idx) => {
+                        const dateKey = point.date.toISOString().split('T')[0];
+                        const dateIndex = dates.indexOf(dateKey);
                         
-                        if (idx === 0) {
-                            ctx.moveTo(x, y);
-                        } else {
-                            ctx.lineTo(x, y);
+                        if (dateIndex !== -1) {
+                            const x = (padding.left + (dateIndex * chartWidth) / (dates.length - 1)) / 2;
+                            const value = convertCurrency(point.balance, point.currency, 'EUR', point.date);
+                            const y = (chartHeight + padding.top) / 2 - (value * chartHeight) / (maxValue * 2);
+
+                            if (idx === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 
                 ctx.stroke();
                 
@@ -1145,7 +1148,9 @@
                     const dateIndex = dates.indexOf(dateKey);
                     
                     if (dateIndex !== -1) {
-                        const x = (padding.left + (dateIndex * chartWidth) / (dates.length - 1)) / 2;
+                        const x = isSingleDate
+                            ? (padding.left + chartWidth / 2) / 2
+                            : (padding.left + (dateIndex * chartWidth) / (dates.length - 1)) / 2;
                         const value = convertCurrency(point.balance, point.currency, 'EUR', point.date);
                         const y = (chartHeight + padding.top) / 2 - (value * chartHeight) / (maxValue * 2);
                         
@@ -1160,19 +1165,31 @@
             // Draw X-axis labels (dates)
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--chart-text');
             ctx.textAlign = 'center';
-            const labelInterval = Math.ceil(dates.length / 10);
-            dates.forEach((date, index) => {
-                if (index % labelInterval === 0 || index === dates.length - 1) {
-                    const x = (padding.left + (index * chartWidth) / (dates.length - 1)) / 2;
-                    const dateObj = new Date(date);
-                    ctx.save();
-                    ctx.translate(x, (chartHeight + padding.top) / 2 + 20);
-                    ctx.rotate(-Math.PI / 4);
-                    ctx.textAlign = 'right';
-                    ctx.fillText(dateObj.toLocaleDateString(), 0, 0);
-                    ctx.restore();
-                }
-            });
+
+            if (isSingleDate) {
+                const x = (padding.left + chartWidth / 2) / 2;
+                const dateObj = new Date(dates[0]);
+                ctx.save();
+                ctx.translate(x, (chartHeight + padding.top) / 2 + 20);
+                ctx.rotate(-Math.PI / 4);
+                ctx.textAlign = 'right';
+                ctx.fillText(dateObj.toLocaleDateString(), 0, 0);
+                ctx.restore();
+            } else {
+                const labelInterval = Math.ceil(dates.length / 10);
+                dates.forEach((date, index) => {
+                    if (index % labelInterval === 0 || index === dates.length - 1) {
+                        const x = (padding.left + (index * chartWidth) / (dates.length - 1)) / 2;
+                        const dateObj = new Date(date);
+                        ctx.save();
+                        ctx.translate(x, (chartHeight + padding.top) / 2 + 20);
+                        ctx.rotate(-Math.PI / 4);
+                        ctx.textAlign = 'right';
+                        ctx.fillText(dateObj.toLocaleDateString(), 0, 0);
+                        ctx.restore();
+                    }
+                });
+            }
             
             // Update legend
             const allAccounts = [...new Set(balanceData.map(d => d.account))];
