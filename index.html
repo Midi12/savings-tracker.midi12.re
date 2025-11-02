@@ -849,6 +849,26 @@
         function processCurrencyData(text, fileName) {
             try {
                 currencyData = parseCSV(text);
+
+                // Parse dates if present in currency data
+                currencyData = currencyData.map(row => {
+                    if (row.date) {
+                        return {
+                            ...row,
+                            date: new Date(row.date)
+                        };
+                    }
+                    return row;
+                });
+
+                // Sort by date (most recent first) for efficient lookup
+                currencyData.sort((a, b) => {
+                    if (!a.date && !b.date) return 0;
+                    if (!a.date) return 1;
+                    if (!b.date) return -1;
+                    return b.date - a.date;
+                });
+
                 document.getElementById('currencyFileName').textContent = fileName;
                 showStatus('currencyStatus', `Loaded ${currencyData.length} currency conversion records from ${fileName}`, 'success');
             } catch (error) {
@@ -1054,18 +1074,40 @@
             if (!currencyData.length || fromCurrency === toCurrency) {
                 return amount;
             }
-            
-            const conversion = currencyData.find(c => 
+
+            // Find all matching currency pairs
+            const matchingConversions = currencyData.filter(c =>
                 (c.from === fromCurrency && c.to === toCurrency) ||
                 (c.source === fromCurrency && c.target === toCurrency)
             );
-            
-            if (conversion) {
-                const rate = parseFloat(conversion.rate || conversion.value || 1);
-                return amount * rate;
+
+            if (matchingConversions.length === 0) {
+                return amount;
             }
-            
-            return amount;
+
+            // If date is provided and conversions have dates, find the most recent applicable rate
+            if (date && matchingConversions.some(c => c.date)) {
+                const transactionDate = date instanceof Date ? date : new Date(date);
+
+                // Filter to conversions where effective date is on or before transaction date
+                const applicableConversions = matchingConversions.filter(c => {
+                    if (!c.date) return false;
+                    return c.date <= transactionDate;
+                });
+
+                // Sort by date descending (most recent first) and take the first
+                if (applicableConversions.length > 0) {
+                    applicableConversions.sort((a, b) => b.date - a.date);
+                    const conversion = applicableConversions[0];
+                    const rate = parseFloat(conversion.rate || conversion.value || 1);
+                    return amount * rate;
+                }
+            }
+
+            // Fallback: use the first matching conversion (backwards compatibility)
+            const conversion = matchingConversions[0];
+            const rate = parseFloat(conversion.rate || conversion.value || 1);
+            return amount * rate;
         }
 
         function processAndDisplay() {
