@@ -732,11 +732,17 @@
         <div class="chart-container" id="chartContainer" style="display: none;">
             <div class="title-container">
                 <h3>Balance Evolution Over Time</h3>
-                <button class="reload-btn" onclick="reloadData()" title="Reload Data">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                        <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                    </svg>
-                </button>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9em; cursor: pointer;">
+                        <input type="checkbox" id="alwaysShowValues" onchange="drawChart()" style="cursor: pointer;">
+                        <span>Always show values</span>
+                    </label>
+                    <button class="reload-btn" onclick="reloadData()" title="Reload Data">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div class="chart-tabs">
                 <button class="chart-tab active" onclick="switchChartView('individual', event)">Individual Balances</button>
@@ -786,6 +792,26 @@
         let balanceFileHandle = null;
         let currencyFileHandle = null;
         const aPIsAvailable = !!window.showOpenFilePicker;
+
+        // Variables for point tracking and hover
+        let chartPoints = []; // Array to store all point positions with their data
+        let hoveredPoint = null; // Currently hovered point
+
+        // Polyfill for roundRect if not available
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+                this.moveTo(x + radius, y);
+                this.lineTo(x + width - radius, y);
+                this.quadraticCurveTo(x + width, y, x + width, y + radius);
+                this.lineTo(x + width, y + height - radius);
+                this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                this.lineTo(x + radius, y + height);
+                this.quadraticCurveTo(x, y + height, x, y + height - radius);
+                this.lineTo(x, y + radius);
+                this.quadraticCurveTo(x, y, x + radius, y);
+                this.closePath();
+            };
+        }
 
         const colorPalette = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -1232,6 +1258,41 @@
             }
         }
 
+        // Helper function to draw value label at a point
+        function drawValueLabel(ctx, x, y, value, account) {
+            const text = value.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) + ' EUR';
+
+            // Measure text to create background
+            ctx.font = '11px sans-serif';
+            const metrics = ctx.measureText(text);
+            const padding = 6;
+            const boxWidth = metrics.width + padding * 2;
+            const boxHeight = 18;
+
+            // Adjust label position to avoid going off screen
+            let labelX = x;
+            let labelY = y - 25;
+
+            // Draw background box
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary');
+            ctx.strokeStyle = account ? accountColors[account] : getComputedStyle(document.documentElement).getPropertyValue('--success');
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.roundRect(labelX - boxWidth / 2, labelY - boxHeight / 2, boxWidth, boxHeight, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw text
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, labelX, labelY);
+        }
+
         function drawChart() {
             if (currentChartView === 'individual') {
                 drawIndividualChart();
@@ -1246,14 +1307,15 @@
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width * 2;
             canvas.height = 800;
-            
+
             const padding = { top: 40, right: 40, bottom: 60, left: 100 };
             const chartWidth = canvas.width - padding.left - padding.right;
             const chartHeight = canvas.height - padding.top - padding.bottom;
-            
-            // Clear canvas
+
+            // Clear canvas and point tracking
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.scale(2, 2);
+            chartPoints = []; // Reset point tracking
             
             if (filteredData.length === 0) {
                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
@@ -1353,26 +1415,48 @@
                 }
                 
                 ctx.stroke();
-                
-                // Draw points
+
+                // Draw points and track positions
                 accountData.forEach(point => {
                     const dateKey = point.date.toISOString().split('T')[0];
                     const dateIndex = dates.indexOf(dateKey);
-                    
+
                     if (dateIndex !== -1) {
                         const x = isSingleDate
                             ? (padding.left + chartWidth / 2) / 2
                             : (padding.left + (dateIndex * chartWidth) / (dates.length - 1)) / 2;
                         const value = convertCurrency(point.balance, point.currency, 'EUR', point.date);
                         const y = (chartHeight + padding.top) / 2 - (value * chartHeight) / (maxValue * 2);
-                        
+
                         ctx.fillStyle = accountColors[account];
                         ctx.beginPath();
                         ctx.arc(x, y, 3, 0, Math.PI * 2);
                         ctx.fill();
+
+                        // Store point position and data for hover detection
+                        chartPoints.push({
+                            x: x * 2, // Multiply by 2 because of canvas scaling
+                            y: y * 2,
+                            value: value,
+                            account: account,
+                            date: point.date
+                        });
                     }
                 });
             });
+
+            // Draw value labels (either on hover or all if checkbox is checked)
+            const alwaysShow = document.getElementById('alwaysShowValues').checked;
+
+            if (alwaysShow) {
+                // Draw all value labels
+                chartPoints.forEach(point => {
+                    drawValueLabel(ctx, point.x / 2, point.y / 2, point.value, point.account);
+                });
+            } else if (hoveredPoint) {
+                // Draw only hovered point label
+                drawValueLabel(ctx, hoveredPoint.x / 2, hoveredPoint.y / 2, hoveredPoint.value, hoveredPoint.account);
+            }
             
             // Draw X-axis labels (dates)
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--chart-text');
@@ -1419,9 +1503,10 @@
             const chartWidth = canvas.width - padding.left - padding.right;
             const chartHeight = canvas.height - padding.top - padding.bottom;
 
-            // Clear canvas
+            // Clear canvas and point tracking
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.scale(2, 2);
+            chartPoints = []; // Reset point tracking
 
             if (filteredData.length === 0) {
                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
@@ -1514,7 +1599,7 @@
 
             ctx.stroke();
 
-            // Draw points
+            // Draw points and track positions
             cumulativeData.forEach((point, idx) => {
                 const x = isSingleDate
                     ? (padding.left + chartWidth / 2) / 2
@@ -1525,7 +1610,29 @@
                 ctx.beginPath();
                 ctx.arc(x, y, 4, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Store point position and data for hover detection
+                chartPoints.push({
+                    x: x * 2, // Multiply by 2 because of canvas scaling
+                    y: y * 2,
+                    value: point.total,
+                    account: null, // No specific account for cumulative view
+                    date: point.date
+                });
             });
+
+            // Draw value labels (either on hover or all if checkbox is checked)
+            const alwaysShow = document.getElementById('alwaysShowValues').checked;
+
+            if (alwaysShow) {
+                // Draw all value labels
+                chartPoints.forEach(point => {
+                    drawValueLabel(ctx, point.x / 2, point.y / 2, point.value, point.account);
+                });
+            } else if (hoveredPoint) {
+                // Draw only hovered point label
+                drawValueLabel(ctx, hoveredPoint.x / 2, hoveredPoint.y / 2, hoveredPoint.value, hoveredPoint.account);
+            }
 
             // Draw X-axis labels (dates)
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--chart-text');
@@ -1651,6 +1758,47 @@
             });
         }
 
+        // Setup canvas mouse event listeners
+        function setupCanvasListeners() {
+            const canvas = document.getElementById('chart');
+
+            canvas.addEventListener('mousemove', function(event) {
+                const rect = canvas.getBoundingClientRect();
+                const x = (event.clientX - rect.left) * 2; // Account for the 2x scaling
+                const y = (event.clientY - rect.top) * 2;
+
+                // Find if mouse is hovering over any point
+                let foundPoint = null;
+                const hoverRadius = 15; // Pixels within which hover is detected
+
+                for (let point of chartPoints) {
+                    const dx = x - point.x;
+                    const dy = y - point.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance <= hoverRadius) {
+                        foundPoint = point;
+                        break;
+                    }
+                }
+
+                // Update hovered point if changed
+                if (foundPoint !== hoveredPoint) {
+                    hoveredPoint = foundPoint;
+                    canvas.style.cursor = foundPoint ? 'pointer' : 'default';
+                    drawChart(); // Redraw to show/hide tooltip
+                }
+            });
+
+            canvas.addEventListener('mouseleave', function() {
+                if (hoveredPoint !== null) {
+                    hoveredPoint = null;
+                    canvas.style.cursor = 'default';
+                    drawChart();
+                }
+            });
+        }
+
         // Set initial theme
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {
@@ -1659,7 +1807,10 @@
             document.body.setAttribute('data-theme', 'dark');
         }
 
-        document.addEventListener('DOMContentLoaded', reloadData);
+        document.addEventListener('DOMContentLoaded', function() {
+            setupCanvasListeners();
+            reloadData();
+        });
     </script>
 
     <div id="docsModal" class="modal" onclick="closeDocs(event)">
